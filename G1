@@ -1,0 +1,147 @@
+#!/bin/bash
+clear
+Menu(){
+   echo "------------------------------------------"
+   echo "              Grau 1                      "
+   echo "------------------------------------------"
+   echo
+   echo "[ 1 ] Instalar o Servidor de SSH"
+   echo "[ 2 ] Remover o SSH"
+   echo "[ 3 ] Backup"
+   echo "[ 4 ] Trocar a Porta do SSH"
+   echo "[ 5 ] Conectar ao SSH"
+   echo "[ 6 ] Sair"
+   echo
+   echo -n "Qual a opcao desejada ? "
+   read opcao
+   case $opcao in
+      1) Instalar;;
+      2) Remover ;;
+      3) Backup ;;
+      4) Trocar ;;
+      5) Conectar ;;
+      6) exit ;;
+      *) "Opcao desconhecida." ; echo ; Principal ;;
+   esac
+}
+Instalar() {
+echo "================================================"
+echo "                                                "
+echo "Iremos prosseguir com a instalação dos pacotes  "
+echo "                                                "
+echo "================================================"
+apt-get install openssh-server
+echo "================================================"
+echo "                                                "
+echo "      Pacotes instalados com sucesso            "
+echo "                                                "
+echo "================================================"
+   Menu
+}
+
+Remover() {
+echo "================================================"
+echo "                                                "
+echo "      Pacotes do SSH serão removidos            "
+echo "                                                "
+echo "================================================"
+/etc/init.d/ssh stop
+apt-get --purge remove openssh-server
+echo "================================================"
+echo "                                                "
+echo "      Remoção concluída com sucesso             "
+echo "                                                "
+echo "================================================"
+Menu
+}
+
+Backup() {
+echo "================================================"
+echo "                                                "
+echo "      O backup será iniciado !!!!!!             "
+echo "                                                "
+echo "================================================"
+mkdir /home/backup
+cp -R /etc/ssh/sshd_config /home/backup
+echo "================================================"
+echo "                                                "
+echo "      Backup concluído com sucesso              "
+echo "                                                "
+echo "================================================"
+echo " o Backup ficou em /home/backup "
+Menu
+}
+
+
+Trocar() {
+porta_atual=`cat /etc/ssh/sshd_config | grep 'Port ' | awk '{print $2}'`
+porta_bckp=22
+echo "A porta atual do SSH é $porta_atual"     #imprime na tela a porta atual do sshd
+echo "Digite a nova porta do servidor de SSH"
+read porta_nova	
+teste_hashtag=`cat /etc/ssh/sshd_config | grep '#Port *' | awk '{print $1}'`
+
+if [ "$teste_hashtag" = "#Port" ] ; then
+    # arquivo com a linha da porta comentada e com a porta 22
+
+    # a linha abaixo realiza a troca da porta do sshd, utilizando o comando sed
+    # repare que são utilizadas as variáveis $porta_atual e $porta_nova
+    # esta linha necessita do sudo
+   sudo sed -i "s/#Port 22/Port $porta_nova/" /etc/ssh/sshd_config
+else
+    # linha da porta não comentada, pode ser porta 22 ou não
+    sudo sed -i "s/Port $porta_atual/Port $porta_nova/" /etc/ssh/sshd_config
+fi
+
+#apenas imprime a confirmação da nova porta do sshd
+porta_confirmacao=`cat /etc/ssh/sshd_config | grep 'Port ' | awk '{print $2}'`
+echo "A porta atual do SSHd é $porta_confirmacao"
+
+#echo "Deseja retornar a porta 22 ? S/N"
+#read resposta
+#if [ $reposta = "S" ] ; then
+porta_atual2=`cat /etc/ssh/sshd_config | grep 'Port ' | awk '{print $2}'`
+porta_bckp=22
+echo "A porta atual do SSH é $porta_atual2"     #imprime na tela a porta atual do sshd
+#echo "Digite a nova porta do servidor de SSH"
+#read porta_nova	
+teste_hashtag=`cat /etc/ssh/sshd_config | grep '#Port *' | awk '{print $1}'`
+
+if [ "$teste_hashtag" = "#Port" ] ; then
+    # arquivo com a linha da porta comentada e com a porta 22
+
+    # a linha abaixo realiza a troca da porta do sshd, utilizando o comando sed
+    # repare que são utilizadas as variáveis $porta_atual e $porta_nova
+    # esta linha necessita do sudo
+   sudo sed -i "s/#Port 22/Port $porta_bckp/" /etc/ssh/sshd_config
+else
+    # linha da porta não comentada, pode ser porta 22 ou não
+    sudo sed -i "s/Port $porta_atual2/Port $porta_bckp/" /etc/ssh/sshd_config
+
+fi
+sudo systemctl restart sshd			            #reinicia o serviço do sshd
+systemctl status sshd
+Menu
+}
+Conectar() {
+echo "================================================"
+echo "                                                "
+echo "      Conexão SSH                               "
+echo "                                                "
+echo "================================================"
+echo " Qual usuário deseja utilizar para o acesso?"
+read user
+echo " Digite o IP onde deseja conectar: | formato xxx.xxx.xxx.xxx "
+read ip
+echo "Digite a porta: "
+read porta
+
+par="-p"
+login=`echo "$user@$ip $par $porta"`
+#login2=$par $porta
+ssh $login
+
+#ssh pedro@192.168.43.122 -p 22 
+Menu
+}
+Menu
